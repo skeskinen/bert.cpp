@@ -1,0 +1,16 @@
+.vscode
+
+build
+models/*/*
+
+compile_commands.json
+
+.exrc
+.cache
+.DS_Store
+
+__pycache__
+
+models/*/
+
+error_logs.txt
