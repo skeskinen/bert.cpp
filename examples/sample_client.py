@@ -2,6 +2,7 @@ import socket
 import struct
 import numpy as np
 import os
+import sys
 
 N_EMBD = 384
 
@@ -13,6 +14,9 @@ def embeddings_from_local_server(s, sock):
 
 host = "localhost"
 port = 8080
+if len(sys.argv) > 1:
+    port = int(sys.argv[1])
+
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.connect((host, port))
     N_EMBD = struct.unpack('i', sock.recv(4))[0]

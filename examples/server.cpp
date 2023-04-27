@@ -65,22 +65,27 @@ int main(int argc, char ** argv) {
     int n_embd = bert_n_embd(model);
 
     while(true) {
+        std::cout << "Waiting for a client" << std::endl;
         if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
             std::cerr << "Accept failed" << std::endl;
             return -1;
         }
+        std::cout << "New connection" << std::endl;
         send(new_socket, &n_embd, sizeof(int), 0);
         while(true) {
             std::string string_in = receive_string(new_socket);
 
             std::vector<bert_vocab::id> tokens = ::bert_tokenize(vocab, string_in);
-            if (tokens.size() > 0) {
+            std::cout << tokens.size() << std::endl;
+            if (tokens.size() > 2) { // 2 means only cls and sep special tokens.
                 auto embeddings = bert_eval(model, params.n_threads, tokens, mem_per_token);
                 if (!embeddings.empty()) {
                     send_floats(new_socket, embeddings);
                 } else {
                     std::cerr << "Embeddings was empty!" << std::endl;
                 }
+            } else {
+                break;
             }
         }
         close(new_socket);

@@ -39,7 +39,7 @@ python3 models/download-ggml.py download all-MiniLM-L6-v2 q4_0
 ```
 ### Start sample server
 ```sh
-./build/bin/server -m models/all-MiniLM-L6-v2/ggml-model-q4_0.bin 
+./build/bin/server -m models/all-MiniLM-L6-v2/ggml-model-q4_0.bin --port 8085
 
 # bert_model_load: loading model from 'models/all-MiniLM-L6-v2/ggml-model-q4_0.bin' - please wait ...
 # bert_model_load: n_vocab = 30522
@@ -52,11 +52,12 @@ python3 models/download-ggml.py download all-MiniLM-L6-v2 q4_0
 # bert_model_load: ggml ctx size =  13.57 MB
 # bert_model_load: ............ done
 # bert_model_load: model size =    13.55 MB / num tensors = 101
-# Server running on port 8080 with 4 threads
+# Server running on port 8085 with 4 threads
+# Waiting for a client
 ```
 ### Run sample client
 ```sh
-python3 examples/sample_client.py 
+python3 examples/sample_client.py 8085
 # Loading texts from sample_client_texts.txt...
 # Loaded 1738 lines.
 # Starting with a test query "Should I get health insurance?"
