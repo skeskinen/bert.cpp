@@ -55,9 +55,27 @@ python3 models/download-ggml.py download all-MiniLM-L6-v2 q4_0
 # Server running on port 8080 with 4 threads
 ```
 ### Run sample client
-
-
-
+```sh
+python3 examples/sample_client.py 
+# Loading texts from sample_client_texts.txt...
+# Loaded 1738 lines.
+# Starting with a test query "Should I get health insurance?"
+# Closest texts:
+# 1. Will my Medicare premiums be higher because of my higher income?
+#  (similarity score: 0.4844)
+# 2. Can I sign up for Medicare Part B if I am working and have health insurance through an employer?
+#  (similarity score: 0.4575)
+# 3. Should I sign up for Medicare Part B if I have Veterans' Benefits?
+#  (similarity score: 0.4052)
+# Enter a text to find similar texts (enter 'q' to quit): expensive
+# Closest texts:
+# 1. It is priced at $ 5,995 for an unlimited number of users tapping into the single processor , or $ 195 per user with a minimum of five users .
+#  (similarity score: 0.4597)
+# 2. The new system costs between $ 1.1 million and $ 22 million , depending on configuration .
+#  (similarity score: 0.4547)
+# 3. Each hull will cost about $ 1.4 billion , with each fully outfitted submarine costing about $ 2.2 billion , Young said .
+#  (similarity score: 0.4078)
+```
 
 ## Benchmarks
 Running MTEB (Massive Text Embedding Benchmark) with bert.cpp vs. [sbert](https://sbert.net/)(cpu mode) gives comparable results between the two, with quantization having minimal effect on accuracy and eval time being similar or better than sbert with batch_size=1 (bert.cpp doesn't support batching).
