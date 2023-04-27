@@ -76,7 +76,6 @@ int main(int argc, char ** argv) {
             std::string string_in = receive_string(new_socket);
 
             std::vector<bert_vocab::id> tokens = ::bert_tokenize(vocab, string_in);
-            std::cout << tokens.size() << std::endl;
             if (tokens.size() > 2) { // 2 means only cls and sep special tokens.
                 auto embeddings = bert_eval(model, params.n_threads, tokens, mem_per_token);
                 if (!embeddings.empty()) {
