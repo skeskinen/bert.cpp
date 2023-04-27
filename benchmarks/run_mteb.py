@@ -7,7 +7,10 @@ import time
 from sentence_transformers import SentenceTransformer
 import os
 
-MODEL_NAME = 'all-MiniLM-L6-v2'
+MODEL_NAME = 'bert-base-uncased'
+HF_PREFIX = ''
+if 'all-MiniLM' in MODEL_NAME:
+    HF_PREFIX = 'sentence-transformers/'
 N_EMBD = 384
 
 modes = ['sbert', 'sbert-batchless', 'f32', 'q4_0', 'q4_1', 'f16']
@@ -38,15 +41,16 @@ class BatchlessModel():
 
 for mode in modes:
     if mode == 'sbert':
-        model = SentenceTransformer(f"sentence-transformers/{MODEL_NAME}")
+        model = SentenceTransformer(f"{HF_PREFIX}{MODEL_NAME}")
     elif mode == 'sbert-batchless':
-        model = BatchlessModel(SentenceTransformer(f"sentence-transformers/{MODEL_NAME}"))
+        model = BatchlessModel(SentenceTransformer(f"{HF_PREFIX}{MODEL_NAME}"))
     else:
         # Start the server process
         server_process = subprocess.Popen(['../build/bin/server', '-m', f'../models/{MODEL_NAME}/ggml-model-{mode}.bin', '-t', '8', '--port', str(port)])
         time.sleep(3)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((host, port))
+        N_EMBD = struct.unpack('i', sock.recv(4))[0]
         model = CppEmbeddingsServerModel(sock)
 
     evaluation = MTEB(tasks=[

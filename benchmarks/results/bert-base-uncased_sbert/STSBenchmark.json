@@ -1,0 +1,20 @@
+{
+  "dataset_revision": "b0fddb56ed78048fa8b90373c8a3cfc37b684831",
+  "mteb_dataset_name": "STSBenchmark",
+  "mteb_version": "1.0.2",
+  "test": {
+    "cos_sim": {
+      "pearson": 0.47908490154296085,
+      "spearman": 0.4729101397066439
+    },
+    "euclidean": {
+      "pearson": 0.49173513386989254,
+      "spearman": 0.48834771506074637
+    },
+    "evaluation_time": 16.71,
+    "manhattan": {
+      "pearson": 0.49171958912774144,
+      "spearman": 0.48862755573369254
+    }
+  }
+}

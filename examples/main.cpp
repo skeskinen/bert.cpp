@@ -74,7 +74,7 @@ int main(int argc, char ** argv) {
         const int64_t t_main_end_us = ggml_time_us();
 
         printf("\n\n");
-        //printf("%s: mem per token = %8zu bytes\n", __func__, mem_per_token);
+        printf("%s: mem per token = %8zu bytes\n", __func__, mem_per_token);
         printf("%s:     load time = %8.2f ms\n", __func__, t_load_us/1000.0f);
         printf("%s:  eval time = %8.2f ms / %.2f ms per token\n", __func__, t_eval_us/1000.0f, t_eval_us/1000.0f/tokens.size());
         printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us)/1000.0f);

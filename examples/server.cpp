@@ -62,12 +62,14 @@ int main(int argc, char ** argv) {
     }
 
     std::cout << "Server running on port " << params.port << " with " << params.n_threads << " threads" << std::endl;
+    int n_embd = bert_n_embd(model);
 
     while(true) {
         if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
             std::cerr << "Accept failed" << std::endl;
             return -1;
         }
+        send(new_socket, &n_embd, sizeof(int), 0);
         while(true) {
             std::string string_in = receive_string(new_socket);
 

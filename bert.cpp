@@ -822,3 +822,8 @@ std::vector<float> bert_eval(
 
     return result;
 }
+
+int bert_n_embd(const bert_model &model)
+{
+    return model.hparams.n_embd;
+}

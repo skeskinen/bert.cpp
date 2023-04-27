@@ -138,6 +138,8 @@ std::vector<float> bert_eval(
     const std::vector<bert_vocab::id> &tokens,
     size_t &mem_per_token);
 
+int bert_n_embd(const bert_model& model);
+
 // #ifdef __cplusplus
 // }
 // #endif

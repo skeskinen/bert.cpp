@@ -1,6 +1,7 @@
 import socket
 import struct
 import numpy as np
+import os
 
 N_EMBD = 384
 
@@ -10,32 +11,25 @@ def embeddings_from_local_server(s, sock):
     floats = struct.unpack('f' * N_EMBD, data)
     return floats
 
-texts = ["How do I get a replacement Medicare card?",
-        "What is the monthly premium for Medicare Part B?",
-        "How do I terminate my Medicare Part B (medical insurance)?",
-        "How do I sign up for Medicare?",
-        "Can I sign up for Medicare Part B if I am working and have health insurance through an employer?",
-        "How do I sign up for Medicare Part B if I already have Part A?",
-        "What are Medicare late enrollment penalties?",
-        "What is Medicare and who can get it?",
-        "How can I get help with my Medicare Part A and Part B premiums?",
-        "What are the different parts of Medicare?",
-        "Will my Medicare premiums be higher because of my higher income?",
-        "What is TRICARE ?",
-        "Should I sign up for Medicare Part B if I have Veterans' Benefits?"]
-
 host = "localhost"
 port = 8080
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.connect((host, port))
+    N_EMBD = struct.unpack('i', sock.recv(4))[0]
 
     # Define the function to embed a single text
     def embed_text(text):
         embedding = embeddings_from_local_server(text, sock)
         return np.array(embedding)
 
-    # Embed all the texts in the list
+    txt_file = "sample_client_texts.txt"
+    print(f"Loading texts from {txt_file}...")
+    with open(os.path.join(os.path.dirname(__file__), txt_file), 'r') as f:
+        texts = f.readlines()
+
     embedded_texts = [embed_text(text) for text in texts]
+    
+    print(f"Loaded {len(texts)} lines.")
 
     def print_results(res):
         (closest_texts, closest_similarities) = res
