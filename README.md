@@ -20,6 +20,7 @@ The main goal of `bert.cpp` is to run the BERT model using 4-bit integer quantiz
     * All inputs are lowercased and trimmed
     * All outputs are mean pooled and normalized
 * The API is in C++ (uses things from std::)
+* Doesn't support batching, which means it's slower than it could be in usecases where you have multiple sentences
 
 ## Usage
 
@@ -76,6 +77,18 @@ python3 examples/sample_client.py 8085
 #  (similarity score: 0.4547)
 # 3. Each hull will cost about $ 1.4 billion , with each fully outfitted submarine costing about $ 2.2 billion , Young said .
 #  (similarity score: 0.4078)
+```
+
+### Converting models to ggml format
+Converting models is similar to llama.cpp. Use models/convert-to-ggml.py to make hf models into either f32 or f16 ggml models. Then use ./build/bin/quantize to turn those into Q4_0, 4bit per weight models.
+
+There is also models/run_conversions.sh which creates all 4 versions (f32, f16, Q4_0, Q4_1) at once.
+```sh
+cd models
+# Clone a model from hf
+git clone https://huggingface.co/sentence-transformers/multi-qa-MiniLM-L6-cos-v1
+# Run conversions to 4 ggml formats (f32, f16, Q4_0, Q4_1)
+sh run_conversions.sh multi-qa-MiniLM-L6-cos-v1
 ```
 
 ## Benchmarks
