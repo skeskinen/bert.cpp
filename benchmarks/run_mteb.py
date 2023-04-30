@@ -7,7 +7,7 @@ import time
 from sentence_transformers import SentenceTransformer
 import os
 
-MODEL_NAME = 'bert-base-uncased'
+MODEL_NAME = 'all-MiniLM-L6-v2'
 HF_PREFIX = ''
 if 'all-MiniLM' in MODEL_NAME:
     HF_PREFIX = 'sentence-transformers/'
@@ -64,4 +64,4 @@ for mode in modes:
     if not "sbert" in mode:
         sock.close()
         server_process.terminate()
-        time.sleep(10)
+        time.sleep(3)

@@ -203,7 +203,7 @@ add_library(bert
             bert.h)
 
 target_include_directories(bert PUBLIC .)
-target_compile_features(bert PUBLIC cxx_std_20) # don't bump
+target_compile_features(bert PUBLIC cxx_std_20)
 target_link_libraries(bert PRIVATE ggml ${BERT_EXTRA_LIBS})
 
 if (BUILD_SHARED_LIBS)

@@ -1,11 +1,13 @@
+#include "bert.h"
+#include "ggml.h"
+
 #include <iostream>
 #include <string>
+#include <vector>
 #include <cstring>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include "bert.h"
-#include "ggml.h"
 
 std::string receive_string(int socket) {
     static char buffer[1 << 15] = {0};
@@ -19,24 +21,21 @@ void send_floats(int socket, const std::vector<float> floats) {
 
 int main(int argc, char ** argv) {
     bert_params params;
-    params.model = "../../models/all-MiniLM-L6-v2/ggml-model-f32.bin";
+    params.model = "../../models/all-MiniLM-L6-v2/ggml-model-q4_0.bin";
 
     if (bert_params_parse(argc, argv, params) == false) {
         return 1;
     }
 
-    bert_vocab vocab;
-    bert_model model;
+    bert_ctx * bctx;
 
     // load the model
     {
-        if (!bert_model_load(params.model, model, vocab)) {
-            fprintf(stderr, "%s: failed to load model from '%s'\n", __func__, params.model.c_str());
+        if ((bctx = bert_load_from_file(params.model)) == nullptr) {
+            fprintf(stderr, "%s: failed to load model from '%s'\n", __func__, params.model);
             return 1;
         }
     }
-    size_t mem_per_token = 0;
-    bert_eval(model, params.n_threads, { 0, 1, 2, 3 }, mem_per_token);
 
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -62,7 +61,7 @@ int main(int argc, char ** argv) {
     }
 
     std::cout << "Server running on port " << params.port << " with " << params.n_threads << " threads" << std::endl;
-    int n_embd = bert_n_embd(model);
+    int n_embd = bert_n_embd(bctx);
 
     while(true) {
         std::cout << "Waiting for a client" << std::endl;
@@ -74,18 +73,12 @@ int main(int argc, char ** argv) {
         send(new_socket, &n_embd, sizeof(int), 0);
         while(true) {
             std::string string_in = receive_string(new_socket);
-
-            std::vector<bert_vocab::id> tokens = ::bert_tokenize(vocab, string_in);
-            if (tokens.size() > 2) { // 2 means only cls and sep special tokens.
-                auto embeddings = bert_eval(model, params.n_threads, tokens, mem_per_token);
-                if (!embeddings.empty()) {
-                    send_floats(new_socket, embeddings);
-                } else {
-                    std::cerr << "Embeddings was empty!" << std::endl;
-                }
-            } else {
+            if (string_in.empty()) {
                 break;
             }
+            std::vector<float> embeddings = std::vector<float>(n_embd);
+            bert_encode(bctx, params.n_threads, string_in.data(), embeddings.data());
+            send_floats(new_socket, embeddings);
         }
         close(new_socket);
     }

@@ -11,6 +11,17 @@
 #include <vector>
 #include <regex>
 
+// default hparams (all-MiniLM-L6-v2)
+struct bert_hparams
+{
+    int32_t n_vocab = 30522;
+    int32_t n_max_tokens = 512;
+    int32_t n_embd = 256;
+    int32_t n_intermediate = 1536;
+    int32_t n_head = 12;
+    int32_t n_layer = 6;
+    int32_t f16 = 1;
+};
 
 // quantize a model
 bool bert_model_quantize(const std::string & fname_inp, const std::string & fname_out, int itype) {
@@ -58,7 +69,7 @@ bool bert_model_quantize(const std::string & fname_inp, const std::string & fnam
     // load hparams
     {
         finp.read((char *) &hparams.n_vocab, sizeof(hparams.n_vocab));
-        finp.read((char *) &hparams.n_ctx,   sizeof(hparams.n_ctx));
+        finp.read((char *) &hparams.n_max_tokens,   sizeof(hparams.n_max_tokens));
         finp.read((char *) &hparams.n_embd,  sizeof(hparams.n_embd));
         finp.read((char *) &hparams.n_intermediate,   sizeof(hparams.n_intermediate));
         finp.read((char *) &hparams.n_head,  sizeof(hparams.n_head));
@@ -66,7 +77,7 @@ bool bert_model_quantize(const std::string & fname_inp, const std::string & fnam
         finp.read((char *) &hparams.f16,     sizeof(hparams.f16));
 
         printf("%s: n_vocab = %d\n", __func__, hparams.n_vocab);
-        printf("%s: n_ctx   = %d\n", __func__, hparams.n_ctx);
+        printf("%s: n_max_tokens   = %d\n", __func__, hparams.n_max_tokens);
         printf("%s: n_embd  = %d\n", __func__, hparams.n_embd);
         printf("%s: n_intermediate  = %d\n", __func__, hparams.n_intermediate);
         printf("%s: n_head  = %d\n", __func__, hparams.n_head);
@@ -74,7 +85,7 @@ bool bert_model_quantize(const std::string & fname_inp, const std::string & fnam
         printf("%s: f16     = %d\n", __func__, hparams.f16);
 
         fout.write((char *) &hparams.n_vocab, sizeof(hparams.n_vocab));
-        fout.write((char *) &hparams.n_ctx,   sizeof(hparams.n_ctx));
+        fout.write((char *) &hparams.n_max_tokens,   sizeof(hparams.n_max_tokens));
         fout.write((char *) &hparams.n_embd,  sizeof(hparams.n_embd));
         fout.write((char *) &hparams.n_intermediate,   sizeof(hparams.n_intermediate));
         fout.write((char *) &hparams.n_head,  sizeof(hparams.n_head));
