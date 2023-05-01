@@ -24,20 +24,66 @@ The main goal of `bert.cpp` is to run the BERT model using 4-bit integer quantiz
 
 ## Usage
 
-### Build
-```sh
-mkdir build
-cd build
-cmake ..
-make
-cd ..
-```
 ### Download models
 ```sh
 pip3 install -r requirements.txt
 # python3 models/download-ggml.py list_models
 python3 models/download-ggml.py download all-MiniLM-L6-v2 q4_0
 ```
+### Build
+To build the dynamic library for usage from e.g. Python:
+```sh
+mkdir build
+cd build
+cmake .. -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release
+make
+cd ..
+```
+
+To build the native binaries, like the example server, with static libraries, run:
+```sh
+mkdir build
+cd build
+cmake .. -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
+make
+cd ..
+```
+### Run the python dynamic library example
+```sh
+python3 examples/sample_dylib.py models/all-MiniLM-L6-v2/ggml-model-f16.bin
+
+# bert_load_from_file: loading model from '../models/all-MiniLM-L6-v2/ggml-model-f16.bin' - please wait ...
+# bert_load_from_file: n_vocab = 30522
+# bert_load_from_file: n_max_tokens   = 512
+# bert_load_from_file: n_embd  = 384
+# bert_load_from_file: n_intermediate  = 1536
+# bert_load_from_file: n_head  = 12
+# bert_load_from_file: n_layer = 6
+# bert_load_from_file: f16     = 1
+# bert_load_from_file: ggml ctx size =  43.12 MB
+# bert_load_from_file: ............ done
+# bert_load_from_file: model size =    43.10 MB / num tensors = 101
+# bert_load_from_file: mem_per_token 450 KB
+# Loading texts from sample_client_texts.txt...
+# Loaded 1738 lines.
+# Starting with a test query "Should I get health insurance?"
+# Closest texts:
+# 1. Can I sign up for Medicare Part B if I am working and have health insurance through an employer?
+#  (similarity score: 0.4790)
+# 2. Will my Medicare premiums be higher because of my higher income?
+#  (similarity score: 0.4633)
+# 3. Should I sign up for Medicare Part B if I have Veterans' Benefits?
+#  (similarity score: 0.4208)
+# Enter a text to find similar texts (enter 'q' to quit): poaching
+# Closest texts:
+# 1. The exotic animal trade is enormous , and it continues to spiral out of control .
+#  (similarity score: 0.2825)
+# 2. " PeopleSoft management entrenchment tactics continue to destroy the value of the company for its shareholders , " said Deborah Lilienthal , an Oracle spokeswoman .
+#  (similarity score: 0.2709)
+# 3. " I 've stopped looters , run political parties out of abandoned buildings , caught people with large amounts of cash and weapons , " Williams said .
+#  (similarity score: 0.2672)
+```
+
 ### Start sample server
 ```sh
 ./build/bin/server -m models/all-MiniLM-L6-v2/ggml-model-q4_0.bin --port 8085

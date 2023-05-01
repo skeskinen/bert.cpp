@@ -1,5 +1,5 @@
 #include "bert.h"
-#include "ggml/ggml.h"
+#include "ggml.h"
 
 #include <cassert>
 #include <cmath>
@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <regex>
 #include <thread>
+#include <algorithm>
 
 // default hparams (all-MiniLM-L6-v2)
 struct bert_hparams
@@ -104,9 +105,6 @@ struct bert_ctx
 
     size_t mem_per_token;
     int32_t max_batch_n;
-    std::vector<bert_vocab_id> buf_tokens;
-    std::vector<bert_vocab_id*> buf_tokens_p;
-    std::vector<int32_t> buf_n_tokens;
     bert_buffer buf_compute;
 };
 
@@ -254,87 +252,76 @@ std::string bert_normalize_prompt(const std::string &text)
 void bert_tokenize(
     struct bert_ctx * ctx,
     const char * text,
-    bert_vocab_id * batch_tokens,
-    int32_t * n_tokens,
-    int32_t n_max_tokens)
-{
-    bert_tokenize_batch(ctx, 1, &text, &batch_tokens, n_tokens, n_max_tokens);
-}
-
-void bert_tokenize_batch(struct bert_ctx * ctx,
-    int32_t n_batch_size,
-    const char ** batch_texts,
-    bert_vocab_id ** batch_tokens,
+    bert_vocab_id * tokens,
     int32_t * n_tokens,
     int32_t n_max_tokens)
 {
     int cls_tok_id = 101;
     int sep_tok_id = 102;
-    const bert_vocab& vocab = ctx->vocab;
+    const bert_vocab &vocab = ctx->vocab;
 
-    for (int ba = 0; ba < n_batch_size; ba++) {
-        std::string str = batch_texts[ba];
-        bert_vocab_id * tokens = batch_tokens[ba];
+    std::string str = text;
 
-        std::vector<std::string> words;
-        // first split the text into words
+    std::vector<std::string> words;
+    // first split the text into words
+    {
+        str = bert_normalize_prompt(str);
+
+        std::string pat = R"([[:punct:]]|[[:alpha:]]+|[[:digit:]]+)";
+
+        std::regex re(pat);
+        std::smatch m;
+
+        while (std::regex_search(str, m, re))
         {
-            str = bert_normalize_prompt(str);
-
-            std::string pat = R"([[:punct:]]|[[:alpha:]]+|[[:digit:]]+)";
-
-            std::regex re(pat);
-            std::smatch m;
-
-            while (std::regex_search(str, m, re))
+            for (std::string x : m)
             {
-                for (std::string x : m)
-                {
-                    words.push_back(x);
-                }
-                str = m.suffix();
+                words.push_back(x);
             }
+            str = m.suffix();
         }
-
-        int32_t t = 0;
-        tokens[t++] = cls_tok_id;
-
-        // find the longest tokens that form the words:
-        for (const auto &word : words)
-        {
-            if (word.size() == 0)
-                continue;
-
-            int i = 0;
-            int n = word.size();
-            auto *token_map = &vocab.token_to_id;
-            loop: while (i < n)
-            {
-                if (t >= n_max_tokens - 1) break;
-                int j = n;
-                while (j > i)
-                {
-                    auto it = token_map->find(word.substr(i, j - i));
-                    if (it != token_map->end())
-                    {
-                        tokens[t++] = it->second;
-                        i = j;
-                        token_map = &vocab.subword_token_to_id;
-                        goto loop;
-                    }
-                    --j;
-                }
-                if (j == i)
-                {
-                    fprintf(stderr, "%s: unknown token '%s'\n", __func__, word.substr(i, 1).data());
-                    token_map = &vocab.subword_token_to_id;
-                    ++i;
-                }
-            }
-        }
-        tokens[t++] = sep_tok_id;
-        n_tokens[ba] = t;
     }
+
+    int32_t t = 0;
+    tokens[t++] = cls_tok_id;
+
+    // find the longest tokens that form the words:
+    for (const auto &word : words)
+    {
+        if (word.size() == 0)
+            continue;
+
+        int i = 0;
+        int n = word.size();
+        auto *token_map = &vocab.token_to_id;
+    loop:
+        while (i < n)
+        {
+            if (t >= n_max_tokens - 1)
+                break;
+            int j = n;
+            while (j > i)
+            {
+                auto it = token_map->find(word.substr(i, j - i));
+                if (it != token_map->end())
+                {
+                    tokens[t++] = it->second;
+                    i = j;
+                    token_map = &vocab.subword_token_to_id;
+                    goto loop;
+                }
+                --j;
+            }
+            if (j == i)
+            {
+                fprintf(stderr, "%s: unknown token '%s'\n", __func__, word.substr(i, 1).data());
+                token_map = &vocab.subword_token_to_id;
+                ++i;
+            }
+        }
+    }
+    tokens[t++] = sep_tok_id;
+    *n_tokens = t;
 }
 
 //
@@ -696,27 +683,18 @@ struct bert_ctx * bert_load_from_file(const char *fname)
         bert_eval(new_bert, 1, tokens, 4, nullptr);
         new_bert->max_batch_n = 0;
     }
+    printf("%s: mem_per_token %d KB\n", __func__, new_bert->mem_per_token / 1024);
 
     return new_bert;
 }
 
 void bert_resize_ctx(bert_ctx * ctx, int32_t new_size) {
-    //int64_t t_start_us = ggml_time_us();
-    // Resize all the small buffers. For tokens, etc.
     int32_t N = ctx->model.hparams.n_max_tokens;
-    ctx->buf_tokens.resize(new_size * N);
-    ctx->buf_tokens_p.resize(new_size);
-    for(int i = 0; i < new_size; i++) {
-        ctx->buf_tokens_p[i] = &ctx->buf_tokens[i * N];
-    }
-    ctx->buf_n_tokens.resize(new_size);
-
     // Resize the compute buffer
     auto & mem_per_token = ctx->mem_per_token;
     const size_t buf_size_new = 1.1 * (mem_per_token * N) * new_size; // add 10% to account for ggml object overhead
     ctx->buf_compute.resize(buf_size_new);
     ctx->max_batch_n = new_size;
-    //printf("%s: %8.2f ms\n", __func__, (ggml_time_us() - t_start_us)/1000.0f);
 }
 
 void bert_free(bert_ctx * ctx) {
@@ -921,24 +899,24 @@ void bert_eval_batch(
         ggml_build_forward_expand(&gf, output);
         ggml_graph_compute(ctx0, &gf);
 
+
         // float *dat = ggml_get_data_f32(output);
         // pretty_print_tensor(dat, output->ne, output->nb, output->n_dims - 1, "");
 
-        // if (n_past%100 == 0) {
-        //     ggml_graph_print   (&gf);
-        //     ggml_graph_dump_dot(&gf, NULL, "bert.dot");
-        // }
+        #ifdef GGML_PERF
+            // print timing information per ggml operation (for debugging purposes)
+            // requires GGML_PERF to be defined
+            ggml_graph_print(&gf);
+        #endif
 
         if (!mem_req_mode) {
             memcpy(batch_embeddings[ba], (float *)ggml_get_data(output), sizeof(float) * n_embd);
-        }
-
-        if (mem_per_token == 0)
-        {
+        } else {
             mem_per_token = ggml_used_mem(ctx0) / N;
+
+            // printf("used_mem = %zu KB \n", ggml_used_mem(ctx0) / 1024);
+            // printf("mem_per_token = %zu KB \n", mem_per_token / 1024);
         }
-        //printf("used_mem = %zu KB \n", ggml_used_mem(ctx0) / 1024);
-        //printf("mem_per_token = %zu KB \n", mem_per_token / 1024);
 
         ggml_free(ctx0);
     }
@@ -950,20 +928,61 @@ void bert_encode(
     const char *texts,
     float *embeddings)
 {
-    bert_encode_batch(ctx, n_threads, 1, &texts, &embeddings);
+    bert_encode_batch(ctx, n_threads, 1, 1, &texts, &embeddings);
 }
 
 void bert_encode_batch(
     struct bert_ctx *ctx,
     int32_t n_threads,
     int32_t n_batch_size,
-    const char ** batch_texts,
-    float **batch_embeddings)
+    int32_t n_inputs,
+    const char ** texts,
+    float **embeddings)
 {
+    if (n_batch_size > n_inputs) {
+        n_batch_size = n_inputs;
+    }
     if (n_batch_size > ctx->max_batch_n) {
         bert_resize_ctx(ctx, n_batch_size);
     }
     int32_t N = bert_n_max_tokens(ctx);
-    bert_tokenize_batch(ctx, n_batch_size, batch_texts, ctx->buf_tokens_p.data(), ctx->buf_n_tokens.data(), N);
-    bert_eval_batch(ctx, n_threads, n_batch_size, ctx->buf_tokens_p.data(), ctx->buf_n_tokens.data(), batch_embeddings);
+
+    // Tokenize the inputs, sort the inputs by tokenized length, batch and eval
+
+    std::vector<int> indices;
+    indices.reserve(n_inputs);
+    for (int i = 0; i < n_inputs; i++) {indices.push_back(i);}
+
+    std::vector<bert_vocab_id> buf_tokens;
+    // Most of this buffer will be unused in typical case where inputs are not that long.
+    buf_tokens.resize(N * n_inputs);
+    std::vector<int32_t> n_tokens = std::vector<int32_t>(n_inputs);
+    std::vector<int32_t> sorted_n_tokens = std::vector<int32_t>(n_inputs);
+
+    std::vector<bert_vocab_id*> unsorted_tokens(n_inputs);
+    std::vector<bert_vocab_id*> sorted_tokens(n_inputs);
+
+    bert_vocab_id* it_tokens = buf_tokens.data();
+    for (int i = 0; i < n_inputs; i++) {
+        unsorted_tokens[i] = it_tokens;
+        bert_tokenize(ctx, texts[i], it_tokens, &n_tokens[i], N);
+        it_tokens += n_tokens[i];
+    }
+    std::sort(indices.begin(), indices.end(), [&](int a, int b) { return n_tokens[a] > n_tokens[b]; });
+
+    std::vector<float*> sorted_embeddings(n_inputs);
+    memcpy(sorted_embeddings.data(), embeddings, n_inputs * sizeof(float*));
+
+    for (int i = 0; i < n_inputs; i++) {
+        sorted_embeddings[i] = embeddings[indices[i]];
+        sorted_tokens[i] = unsorted_tokens[indices[i]];
+        sorted_n_tokens[i] = n_tokens[indices[i]];
+    }
+
+    for (int i = 0; i < n_inputs; i += n_batch_size) {
+        if (i + n_batch_size > n_inputs) {
+            n_batch_size = n_inputs - i;
+        }
+        bert_eval_batch(ctx, n_threads, n_batch_size, &sorted_tokens[i], &sorted_n_tokens[i], &sorted_embeddings[i]);
+    }
 }

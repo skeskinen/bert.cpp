@@ -31,7 +31,6 @@ int main(int argc, char ** argv) {
         t_load_us = ggml_time_us() - t_start_us;
     }
 
-    int64_t t_tokenizing_us = 0;
     int64_t t_eval_us  = 0;
     int64_t t_start_us = ggml_time_us();
     int N = bert_n_max_tokens(bctx);
@@ -53,8 +52,6 @@ int main(int argc, char ** argv) {
     for (auto& tok : tokens) {
         printf("%d -> %s\n", tok, bert_vocab_id_to_token(bctx, tok));
     }
-    t_tokenizing_us = ggml_time_us() - t_start_us;
-    t_start_us = ggml_time_us();
     std::vector<float> embeddings(bert_n_embd(bctx));
     bert_eval(bctx, params.n_threads, tokens.data(), n_tokens, embeddings.data());
     t_eval_us += ggml_time_us() - t_start_us;
@@ -72,7 +69,6 @@ int main(int argc, char ** argv) {
         printf("\n\n");
         //printf("%s: mem per token = %8zu bytes\n", __func__, mem_per_token);
         printf("%s:     load time = %8.2f ms\n", __func__, t_load_us/1000.0f);
-        printf("%s:  tokenizing time = %8.2f ms\n", __func__, t_tokenizing_us/1000.0f);
         printf("%s:  eval time = %8.2f ms / %.2f ms per token\n", __func__, t_eval_us/1000.0f, t_eval_us/1000.0f/tokens.size());
         printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us)/1000.0f);
     }

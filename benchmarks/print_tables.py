@@ -3,7 +3,7 @@ import json
 
 RESULTS_DIR = "results"
 BENCHMARKS = ["STSBenchmark", "EmotionClassification"]
-DATA_TYPES = ["f16", "f32", "q4_0", "q4_1", "sbert", "sbert-batchless"]
+DATA_TYPES = [ "f32", "f16", "q4_0", "q4_1", "sbert", "sbert-batchless"]
 
 # Define a dictionary to store the results
 results_dict = {}
@@ -36,9 +36,9 @@ for model in models:
             results_path = os.path.join(dir_name, f"{benchmark}.json")
             with open(results_path, "r") as f:
                 results = json.load(f)
-            
+
             data_type_results[benchmark] = extract_results(results['test'])
-            
+
         model_results[data_type] = data_type_results
     results_dict[model] = model_results
 

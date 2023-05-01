@@ -9,10 +9,9 @@
 extern "C" {
 #endif
 
-
 struct bert_params
 {
-    int32_t n_threads = 4;
+    int32_t n_threads = 6;
     int32_t port = 8080; // server mode port to bind
 
     const char* model = "models/all-MiniLM-L6-v2/ggml-model-q4_0.bin"; // model path
@@ -36,25 +35,22 @@ void bert_encode(
     const char * texts,
     float * embeddings);
 
+// n_batch_size - how many to process at a time
+// n_inputs     - total size of texts and embeddings arrays
 void bert_encode_batch(
     struct bert_ctx * ctx,
     int32_t n_threads,
     int32_t n_batch_size,
-    const char ** batch_texts,
-    float ** batch_embeddings);
+    int32_t n_inputs,
+    const char ** texts,
+    float ** embeddings);
+
+// Api for separate tokenization & eval
 
 void bert_tokenize(
     struct bert_ctx * ctx,
     const char * text,
     bert_vocab_id * tokens,
-    int32_t * n_tokens,
-    int32_t n_max_tokens);
-
-void bert_tokenize_batch(
-    struct bert_ctx * ctx,
-    int32_t n_batch_size,
-    const char ** batch_texts,
-    bert_vocab_id ** batch_tokens,
     int32_t * n_tokens,
     int32_t n_max_tokens);
 
@@ -65,6 +61,7 @@ void bert_eval(
     int32_t n_tokens,
     float * embeddings);
 
+// NOTE: for batch processing the longest input must be first
 void bert_eval_batch(
     struct bert_ctx * ctx,
     int32_t n_threads,

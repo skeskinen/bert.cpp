@@ -5,6 +5,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 #
 # Option list
 #
@@ -18,6 +22,7 @@ option(BERT_LTO                    "bert: enable link time optimization"        
 option(BERT_ALL_WARNINGS           "bert: enable all compiler warnings"                   OFF)
 option(BERT_ALL_WARNINGS_3RD_PARTY "bert: enable all compiler warnings in 3rd party libs" OFF)
 option(BERT_GPROF                  "bert: enable gprof"                                   OFF)
+option(BERT_PERF                   "bert: enable performance logging"                     OFF)
 
 # sanitizers
 option(BERT_SANITIZE_THREAD        "bert: enable thread sanitizer"                        OFF)
@@ -89,18 +94,7 @@ endif()
 
 if (BERT_ALL_WARNINGS)
     if (NOT MSVC)
-        set(c_flags
-            -Wall
-            -Wextra
-            -Wpedantic
-            -Wcast-qual
-            -Wdouble-promotion
-            -Wshadow
-            -Wstrict-prototypes
-            -Wpointer-arith
-            -Wno-unused-function
-        )
-        set(cxx_flags
+        add_compile_options(
             -Wall
             -Wextra
             -Wpedantic
@@ -110,15 +104,16 @@ if (BERT_ALL_WARNINGS)
     else()
         # todo : msvc
     endif()
-
-    add_compile_options(
-            "$<$<COMPILE_LANGUAGE:C>:${c_flags}>"
-            "$<$<COMPILE_LANGUAGE:CXX>:${cxx_flags}>"
-    )
-
 endif()
 
-add_compile_options(-Wno-format -O3)
+add_compile_options(-Wno-format)
+
+if(BERT_PERF)
+    add_compile_definitions(GGML_PERF)
+endif()
+
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 if (BERT_LTO)
     include(CheckIPOSupported)
@@ -194,10 +189,6 @@ endif()
 
 add_subdirectory(ggml)
 
-if (BUILD_SHARED_LIBS)
-    set_target_properties(ggml PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
-
 add_library(bert
             bert.cpp
             bert.h)
@@ -207,9 +198,11 @@ target_compile_features(bert PUBLIC cxx_std_20)
 target_link_libraries(bert PRIVATE ggml ${BERT_EXTRA_LIBS})
 
 if (BUILD_SHARED_LIBS)
+    set_target_properties(ggml PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
     set_target_properties(bert PROPERTIES POSITION_INDEPENDENT_CODE ON)
     target_compile_definitions(bert PRIVATE BERT_SHARED BERT_BUILD)
+else()
+    add_subdirectory(examples)
+    add_subdirectory(models)
 endif()
-
-add_subdirectory(examples)
-add_subdirectory(models)
