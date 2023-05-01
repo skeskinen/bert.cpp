@@ -41,6 +41,7 @@ private:
 int main() {
     BertModel model("../models/all-MiniLM-L6-v2/ggml-model-f16.bin");
     /*
+    Potential api, not implemented:
     auto embeddings = model.encode("siikahan se siellä");
     for (auto embedding : embeddings) {
         std::cout << embedding << " ";

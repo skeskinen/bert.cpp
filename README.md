@@ -1,7 +1,7 @@
 # bert.cpp
 
 [ggml](https://github.com/ggerganov/ggml) inference of BERT neural net architecture with pooling and normalization from [SentenceTransformers (sbert.net)](https://sbert.net/).
-High quality sentence embeddings in pure C++ (or C).
+High quality sentence embeddings in pure C++ (with C API).
 
 ## Description
 The main goal of `bert.cpp` is to run the BERT model using 4-bit integer quantization on CPU
@@ -15,12 +15,10 @@ The main goal of `bert.cpp` is to run the BERT model using 4-bit integer quantiz
 
 ## Limitations & TODO
 * Tokenizer doesn't correctly handle asian writing (CJK, maybe others)
-* Inputs longer than ctx size are not truncated. If you are trying to make embeddings for longer texts make sure to truncate.
 * bert.cpp doesn't respect tokenizer, pooling or normalization settings from the model card:
     * All inputs are lowercased and trimmed
     * All outputs are mean pooled and normalized
-* The API is in C++ (uses things from std::)
-* Doesn't support batching, which means it's slower than it could be in usecases where you have multiple sentences
+* Batching support is WIP. Lack of real batching means that this library is slower than it could be in usecases where you have multiple sentences
 
 ## Usage
 
