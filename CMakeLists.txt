@@ -15,7 +15,7 @@ endif()
 
 # general
 option(BERT_STATIC                 "bert: static link libraries"                          OFF)
-option(BERT_NATIVE                 "bert: enable -march=native flag"                      ON)
+option(BERT_NATIVE                 "bert: enable -march=native flag"                       OFF)
 option(BERT_LTO                    "bert: enable link time optimization"                  OFF)
 
 # debug

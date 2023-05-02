@@ -15,6 +15,11 @@
 #include <thread>
 #include <algorithm>
 
+// if using clang under macos, use unordered_map
+#if defined(__APPLE__)
+#include <unordered_map>
+#endif
+
 // default hparams (all-MiniLM-L6-v2)
 struct bert_hparams
 {
