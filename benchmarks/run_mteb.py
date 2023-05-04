@@ -4,21 +4,24 @@ from sentence_transformers import SentenceTransformer
 import os
 import ctypes
 from typing import Union, List
+import sys
 
 os.chdir(os.path.dirname(__file__))
 
 MODEL_NAME = 'all-MiniLM-L6-v2'
+if len(sys.argv) > 1:
+    MODEL_NAME = sys.argv[1]
+
 HF_PREFIX = ''
 if 'all-MiniLM' in MODEL_NAME:
     HF_PREFIX = 'sentence-transformers/'
 N_THREADS = 6
 
-#modes = ['q4_0', 'q4_1', 'f32', 'f16', 'sbert', 'sbert-batchless']
-modes = ['q4_0', 'q4_1' ]
+modes = ['q4_0', 'q4_1', 'f32', 'f16', 'sbert', 'sbert-batchless']
 
 TASKS = [
     "STSBenchmark",
-    #"EmotionClassification",
+    "EmotionClassification",
 ]
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false" # Get rid of the warning spam from sbert tokenizer
@@ -87,6 +90,6 @@ for mode in modes:
         model = BertModel(f'../models/{MODEL_NAME}/ggml-model-{mode}.bin')
 
     evaluation = MTEB(tasks=TASKS)
-    output_folder = f"results_dylib/{MODEL_NAME}_{mode}"
+    output_folder = f"results/{MODEL_NAME}_{mode}"
 
     evaluation.run(model, output_folder=output_folder, eval_splits=["test"], task_langs=["en"])

@@ -109,6 +109,7 @@ struct bert_ctx
     bert_vocab vocab;
 
     size_t mem_per_token;
+    int64_t mem_per_input;
     int32_t max_batch_n;
     bert_buffer buf_compute;
 };
@@ -687,19 +688,34 @@ struct bert_ctx * bert_load_from_file(const char *fname)
         new_bert->buf_compute.resize(16 * 1024 * 1024);
         bert_eval(new_bert, 1, tokens, 4, nullptr);
         new_bert->max_batch_n = 0;
+
+        // TODO: Max tokens should be a param?
+        int32_t N = new_bert->model.hparams.n_max_tokens;
+        new_bert->mem_per_input = 1.1 * (new_bert->mem_per_token * N); // add 10% to account for ggml object overhead
+
     }
-    printf("%s: mem_per_token %d KB\n", __func__, new_bert->mem_per_token / 1024);
+    printf("%s: mem_per_token %d KB, mem_per_input %lld MB\n", __func__, new_bert->mem_per_token / (1 << 10), new_bert->mem_per_input / (1 << 20));
 
     return new_bert;
 }
 
-void bert_resize_ctx(bert_ctx * ctx, int32_t new_size) {
-    int32_t N = ctx->model.hparams.n_max_tokens;
-    // Resize the compute buffer
-    auto & mem_per_token = ctx->mem_per_token;
-    const size_t buf_size_new = 1.1 * (mem_per_token * N) * new_size; // add 10% to account for ggml object overhead
-    ctx->buf_compute.resize(buf_size_new);
-    ctx->max_batch_n = new_size;
+void bert_resize_ctx(bert_ctx * ctx, int32_t new_size) {    
+    int64_t buf_size_new = ctx->mem_per_input * new_size;
+
+    // TODO: Max memory should be a param? Now just 1 GB
+    int64_t GB = 1 << 30;
+    //printf("%s: requested_buf_size %lldMB\n", __func__, buf_size_new / (1 << 20));
+    if (buf_size_new > GB) {
+        int32_t adjusted_new_size = GB / ctx->mem_per_input;
+        if (adjusted_new_size < 1) adjusted_new_size = 1;
+        //printf("%s: requested batch size %d, actual new batch size %d\n", __func__, new_size, adjusted_new_size);
+        new_size = adjusted_new_size;
+        buf_size_new = ctx->mem_per_input * new_size;
+    }
+    if (new_size > ctx->max_batch_n) {
+        ctx->buf_compute.resize(buf_size_new);
+        ctx->max_batch_n = new_size;
+    }
 }
 
 void bert_free(bert_ctx * ctx) {
@@ -730,6 +746,10 @@ void bert_eval_batch(
     // batch_embeddings is nullptr for the initial memory requirements run
     if (!mem_req_mode && n_batch_size > ctx->max_batch_n) {
         bert_resize_ctx(ctx, n_batch_size);
+        if (n_batch_size > ctx->max_batch_n) {
+            fprintf(stderr, "%s: tried to increase buffers to batch size %d but failed\n", __func__, n_batch_size);
+            return;
+        }
     }
 
     // TODO: implement real batching
@@ -944,50 +964,66 @@ void bert_encode_batch(
     const char ** texts,
     float **embeddings)
 {
+    // TODO: Disable batching for now
+    n_batch_size = 1;
+    /*
     if (n_batch_size > n_inputs) {
         n_batch_size = n_inputs;
     }
     if (n_batch_size > ctx->max_batch_n) {
         bert_resize_ctx(ctx, n_batch_size);
+        n_batch_size = ctx->max_batch_n;
     }
+    */
+
     int32_t N = bert_n_max_tokens(ctx);
-
-    // Tokenize the inputs, sort the inputs by tokenized length, batch and eval
-
-    std::vector<int> indices;
-    indices.reserve(n_inputs);
-    for (int i = 0; i < n_inputs; i++) {indices.push_back(i);}
 
     std::vector<bert_vocab_id> buf_tokens;
     // Most of this buffer will be unused in typical case where inputs are not that long.
     buf_tokens.resize(N * n_inputs);
     std::vector<int32_t> n_tokens = std::vector<int32_t>(n_inputs);
-    std::vector<int32_t> sorted_n_tokens = std::vector<int32_t>(n_inputs);
-
     std::vector<bert_vocab_id*> unsorted_tokens(n_inputs);
-    std::vector<bert_vocab_id*> sorted_tokens(n_inputs);
-
     bert_vocab_id* it_tokens = buf_tokens.data();
     for (int i = 0; i < n_inputs; i++) {
         unsorted_tokens[i] = it_tokens;
         bert_tokenize(ctx, texts[i], it_tokens, &n_tokens[i], N);
         it_tokens += n_tokens[i];
     }
-    std::sort(indices.begin(), indices.end(), [&](int a, int b) { return n_tokens[a] > n_tokens[b]; });
 
-    std::vector<float*> sorted_embeddings(n_inputs);
-    memcpy(sorted_embeddings.data(), embeddings, n_inputs * sizeof(float*));
+    if (n_batch_size == n_inputs) {
+        bert_eval_batch(ctx, n_threads, n_batch_size, unsorted_tokens.data(), n_tokens.data(), embeddings);
+    } else {
+        // sort the inputs by tokenized length, batch and eval
 
-    for (int i = 0; i < n_inputs; i++) {
-        sorted_embeddings[i] = embeddings[indices[i]];
-        sorted_tokens[i] = unsorted_tokens[indices[i]];
-        sorted_n_tokens[i] = n_tokens[indices[i]];
-    }
-
-    for (int i = 0; i < n_inputs; i += n_batch_size) {
-        if (i + n_batch_size > n_inputs) {
-            n_batch_size = n_inputs - i;
+        std::vector<int> indices;
+        indices.reserve(n_inputs);
+        for (int i = 0; i < n_inputs; i++)
+        {
+            indices.push_back(i);
         }
-        bert_eval_batch(ctx, n_threads, n_batch_size, &sorted_tokens[i], &sorted_n_tokens[i], &sorted_embeddings[i]);
+
+        std::vector<int32_t> sorted_n_tokens = std::vector<int32_t>(n_inputs);
+
+        std::vector<bert_vocab_id *> sorted_tokens(n_inputs);
+
+        std::sort(indices.begin(), indices.end(), [&](int a, int b)
+                  { return n_tokens[a] < n_tokens[b]; });
+
+        std::vector<float *> sorted_embeddings(n_inputs);
+        memcpy(sorted_embeddings.data(), embeddings, n_inputs * sizeof(float *));
+
+        for (int i = 0; i < n_inputs; i++) {
+            sorted_embeddings[i] = embeddings[indices[i]];
+            sorted_tokens[i] = unsorted_tokens[indices[i]];
+            sorted_n_tokens[i] = n_tokens[indices[i]];
+        }
+
+        for (int i = 0; i < n_inputs; i += n_batch_size)
+        {
+            if (i + n_batch_size > n_inputs) {
+                n_batch_size = n_inputs - i;
+            }
+            bert_eval_batch(ctx, n_threads, n_batch_size, &sorted_tokens[i], &sorted_n_tokens[i], &sorted_embeddings[i]);
+        }
     }
 }

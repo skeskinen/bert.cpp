@@ -3,11 +3,11 @@
   "mteb_dataset_name": "EmotionClassification",
   "mteb_version": "1.0.2",
   "test": {
-    "accuracy": 0.40149999999999997,
-    "accuracy_stderr": 0.024780032284079052,
-    "evaluation_time": 21.37,
-    "f1": 0.36504958798648124,
-    "f1_stderr": 0.01997914833873719,
-    "main_score": 0.40149999999999997
+    "accuracy": 0.40275,
+    "accuracy_stderr": 0.02354808909444671,
+    "evaluation_time": 11.41,
+    "f1": 0.3662514298924403,
+    "f1_stderr": 0.017820730543621332,
+    "main_score": 0.40275
   }
 }
