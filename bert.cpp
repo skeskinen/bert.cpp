@@ -10,16 +10,9 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <unistd.h>
 #include <regex>
 #include <thread>
 #include <algorithm>
-#include <unordered_map>
-
-// if using clang under macos, use unordered_map
-#if defined(__APPLE__)
-#include <unordered_map>
-#endif
 
 // default hparams (all-MiniLM-L6-v2)
 struct bert_hparams
@@ -213,7 +206,7 @@ static size_t utf8_len(char src)
 std::string stripAccents(const std::string &inputString)
 {
     std::string resultString;
-    std::unordered_map<std::string, char> accentMap = {{"À", 'A'},{"Á", 'A'},
+    std::map<std::string, char> accentMap = {{"À", 'A'},{"Á", 'A'},
         {"Â", 'A'},{"Ã", 'A'},{"Ä", 'A'},{"Å", 'A'},{"à", 'a'},{"á", 'a'},
         {"â", 'a'},{"ã", 'a'},{"ä", 'a'},{"å", 'a'},{"È", 'E'},{"É", 'E'},
         {"Ê", 'E'},{"Ë", 'E'},{"è", 'e'},{"é", 'e'},{"ê", 'e'},{"ë", 'e'},
