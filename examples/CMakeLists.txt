@@ -1,6 +1,7 @@
+if(NOT WIN32)
 add_executable(server server.cpp)
 target_link_libraries(server PRIVATE bert ggml)
-
+endif()
 add_executable(main main.cpp)
 target_link_libraries(main PRIVATE bert ggml)
 
