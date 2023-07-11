@@ -1,3 +1,6 @@
+if(WIN32)
+add_definitions(-DNOMINMAX=1)
+endif()
 if(NOT WIN32)
 add_executable(server server.cpp)
 target_link_libraries(server PRIVATE bert ggml)

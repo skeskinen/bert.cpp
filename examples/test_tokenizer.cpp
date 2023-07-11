@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
-
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -28,7 +27,7 @@ void tokenizer_test(bert_ctx * ctx, const std::string& input, const std::vector<
         printf("]\n");
 
         for (size_t i = 0; i < result.size(); i++) {
-            bert_vocab_id a = expected[min(i, expected.size()-1)];
+            bert_vocab_id a = expected[std::min(i, (expected.size()-1))];
             bert_vocab_id b = result[i];
             const char *color_start = (a == b) ? ANSI_COLOR_GREEN : ANSI_COLOR_RED;
             const char *color_end = ANSI_COLOR_RESET;
