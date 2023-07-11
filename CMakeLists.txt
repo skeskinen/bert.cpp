@@ -106,7 +106,9 @@ if (BERT_ALL_WARNINGS)
     endif()
 endif()
 
+if(NOT WIN32)
 add_compile_options(-Wno-format)
+endif()
 
 if(BERT_PERF)
     add_compile_definitions(GGML_PERF)
@@ -196,6 +198,10 @@ add_library(bert
 target_include_directories(bert PUBLIC .)
 target_compile_features(bert PUBLIC cxx_std_20)
 target_link_libraries(bert PRIVATE ggml ${BERT_EXTRA_LIBS})
+
+if(WIN32)
+include_directories(${CMAKE_SOURCE_DIR}/include_win)
+endif()
 
 if (BUILD_SHARED_LIBS)
     set_target_properties(ggml PROPERTIES POSITION_INDEPENDENT_CODE ON)
