@@ -22,6 +22,10 @@ The main goal of `bert.cpp` is to run the BERT model using 4-bit integer quantiz
 
 ## Usage
 
+### Checkout the ggml submodule
+```sh
+git submodule update --init --recursive
+```
 ### Download models
 ```sh
 pip3 install -r requirements.txt
