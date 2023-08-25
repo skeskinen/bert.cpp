@@ -1,3 +1,11 @@
+if (MSVC)
+    if (BERT_AVX2)
+        add_compile_options(/arch:AVX2)
+    elseif (BERT_AVX)
+        add_compile_options(/arch:AVX)
+    endif()
+endif()
+
 if(WIN32)
 add_definitions(-DNOMINMAX=1)
 endif()
