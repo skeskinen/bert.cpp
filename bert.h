@@ -5,6 +5,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#if defined(_WIN32)
+#define BERT_API __declspec(dllexport)
+#else
+#define BERT_API __attribute__ ((visibility ("default")))
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,18 +24,18 @@ struct bert_params
     const char* prompt = "test prompt";
 };
 
-bool bert_params_parse(int argc, char **argv, bert_params &params);
+BERT_API bool bert_params_parse(int argc, char **argv, bert_params &params);
 
 struct bert_ctx;
 
 typedef int32_t bert_vocab_id;
 
-struct bert_ctx * bert_load_from_file(const char * fname);
-void bert_free(bert_ctx * ctx);
+BERT_API struct bert_ctx * bert_load_from_file(const char * fname);
+BERT_API void bert_free(bert_ctx * ctx);
 
 // Main api, does both tokenizing and evaluation
 
-void bert_encode(
+BERT_API void bert_encode(
     struct bert_ctx * ctx,
     int32_t n_threads,
     const char * texts,
@@ -37,7 +43,7 @@ void bert_encode(
 
 // n_batch_size - how many to process at a time
 // n_inputs     - total size of texts and embeddings arrays
-void bert_encode_batch(
+BERT_API void bert_encode_batch(
     struct bert_ctx * ctx,
     int32_t n_threads,
     int32_t n_batch_size,
@@ -47,14 +53,14 @@ void bert_encode_batch(
 
 // Api for separate tokenization & eval
 
-void bert_tokenize(
+BERT_API void bert_tokenize(
     struct bert_ctx * ctx,
     const char * text,
     bert_vocab_id * tokens,
     int32_t * n_tokens,
     int32_t n_max_tokens);
 
-void bert_eval(
+BERT_API void bert_eval(
     struct bert_ctx * ctx,
     int32_t n_threads,
     bert_vocab_id * tokens,
@@ -62,7 +68,7 @@ void bert_eval(
     float * embeddings);
 
 // NOTE: for batch processing the longest input must be first
-void bert_eval_batch(
+BERT_API void bert_eval_batch(
     struct bert_ctx * ctx,
     int32_t n_threads,
     int32_t n_batch_size,
@@ -70,10 +76,10 @@ void bert_eval_batch(
     int32_t * n_tokens,
     float ** batch_embeddings);
 
-int32_t bert_n_embd(bert_ctx * ctx);
-int32_t bert_n_max_tokens(bert_ctx * ctx);
+BERT_API int32_t bert_n_embd(bert_ctx * ctx);
+BERT_API int32_t bert_n_max_tokens(bert_ctx * ctx);
 
-const char* bert_vocab_id_to_token(bert_ctx * ctx, bert_vocab_id id);
+BERT_API const char* bert_vocab_id_to_token(bert_ctx * ctx, bert_vocab_id id);
 
 #ifdef __cplusplus
 }
