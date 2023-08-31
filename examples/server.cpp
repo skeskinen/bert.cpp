@@ -55,6 +55,26 @@ int main(int argc, char ** argv) {
     struct sockaddr_in address;
     int addrlen = sizeof(address);
 
+
+#if WIN32
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    int err;
+
+    /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
+    wVersionRequested = MAKEWORD(2, 2);
+
+    err = WSAStartup(wVersionRequested, &wsaData);
+    if (err != 0) {
+        /* Tell the user that we could not find a usable */
+        /* Winsock DLL.                                  */
+        printf("WSAStartup failed with error: %d\n", err);
+        return 1;
+    }
+
+#endif
+
+
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         std::cerr << "Socket creation failed" << std::endl;
         return -1;
@@ -97,6 +117,8 @@ int main(int argc, char ** argv) {
         close(new_socket);
     }
     close(server_fd);
-
+#if WIN32
+    WSACleanup();
+#endif
     return 0;
 }
