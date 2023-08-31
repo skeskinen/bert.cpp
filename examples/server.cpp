@@ -7,20 +7,9 @@
 #include <cstring>
 
 #ifdef WIN32
-#include <io.h>
-#include <stdint.h>
-#include <winsock2.h>
-#include <Ws2ipdef.h>   
+#include "winsock2.h"
+#include "include_win/unistd.h"
 typedef int socklen_t;
-
-#ifndef _SSIZE_T_DEFINED
-#ifdef  _WIN64
-typedef unsigned __int64    ssize_t;
-#else
-typedef _W64 unsigned int   ssize_t;
-#endif
-#define _SSIZE_T_DEFINED
-#endif
 #define read _read
 #define close _close
 
@@ -31,6 +20,7 @@ typedef _W64 unsigned int   ssize_t;
 #include <arpa/inet.h>
 #define SOCKET_HANDLE int
 #endif
+
 
 
 std::string receive_string(SOCKET_HANDLE socket) {
