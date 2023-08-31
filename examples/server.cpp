@@ -5,18 +5,42 @@
 #include <string>
 #include <vector>
 #include <cstring>
+
+#ifdef WIN32
+#include <io.h>
+#include <stdint.h>
+#include <winsock2.h>
+#include <Ws2ipdef.h>   
+typedef int socklen_t;
+
+#ifndef _SSIZE_T_DEFINED
+#ifdef  _WIN64
+typedef unsigned __int64    ssize_t;
+#else
+typedef _W64 unsigned int   ssize_t;
+#endif
+#define _SSIZE_T_DEFINED
+#endif
+#define read _read
+#define close _close
+
+#define SOCKET_HANDLE SOCKET
+#else
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#define SOCKET_HANDLE int
+#endif
 
-std::string receive_string(int socket) {
+
+std::string receive_string(SOCKET_HANDLE socket) {
     static char buffer[1 << 15] = {0};
     ssize_t bytes_received = read(socket, buffer, sizeof(buffer));
     return std::string(buffer, bytes_received);
 }
 
-void send_floats(int socket, const std::vector<float> floats) {
-    send(socket, floats.data(), floats.size() * sizeof(float), 0);
+void send_floats(SOCKET_HANDLE socket, const std::vector<float> floats) {
+    send(socket, (const char *)floats.data(), floats.size() * sizeof(float), 0);
 }
 
 int main(int argc, char ** argv) {
@@ -37,7 +61,7 @@ int main(int argc, char ** argv) {
         }
     }
 
-    int server_fd, new_socket;
+    SOCKET_HANDLE server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
 
@@ -70,7 +94,7 @@ int main(int argc, char ** argv) {
             return -1;
         }
         std::cout << "New connection" << std::endl;
-        send(new_socket, &n_embd, sizeof(int), 0);
+        send(new_socket, (const char *) & n_embd, sizeof(int), 0);
         while(true) {
             std::string string_in = receive_string(new_socket);
             if (string_in.empty()) {

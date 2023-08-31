@@ -1,3 +1,5 @@
+include_directories(${CMAKE_SOURCE_DIR}/)
+
 if (MSVC)
     if (BERT_AVX2)
         add_compile_options(/arch:AVX2)
@@ -9,9 +11,13 @@ endif()
 if(WIN32)
 add_definitions(-DNOMINMAX=1)
 endif()
-if(NOT WIN32)
+
+
 add_executable(server server.cpp)
-target_link_libraries(server PRIVATE bert ggml)
+if(NOT WIN32)
+	target_link_libraries(server PRIVATE bert ggml)
+else()
+	target_link_libraries(server PRIVATE bert ggml ws2_32)
 endif()
 add_executable(main main.cpp)
 target_link_libraries(main PRIVATE bert ggml)
