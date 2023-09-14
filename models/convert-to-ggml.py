@@ -22,8 +22,6 @@ with open(dir_model + "/tokenizer.json", "r", encoding="utf-8") as f:
 with open(dir_model + "/config.json", "r", encoding="utf-8") as f:
     hparams = json.load(f)
 
-with open(dir_model + "/vocab.txt", "r", encoding="utf-8") as f:
-    vocab = f.readlines()
 # possible data types
 #   ftype == 0 -> float32
 #   ftype == 1 -> float16
@@ -63,10 +61,20 @@ fout.write(struct.pack("i", hparams["num_attention_heads"]))
 fout.write(struct.pack("i", hparams["num_hidden_layers"]))
 fout.write(struct.pack("i", ftype))
 
-for i in range(hparams["vocab_size"]):
-    text = vocab[i][:-1] # strips newline at the end
-    #print(f"{i}:{text}")
-    data = bytes(text, 'utf-8')
+vocab_list = []
+
+# print(tokenizer.get_vocab())
+vocab = tokenizer.get_vocab()
+if not isinstance(vocab, dict):
+    raise TypeError
+items = list(vocab.items())
+items.sort(key=lambda x: x[1])
+vocab_list = [i[0] for i in items]
+
+for idx, k in enumerate(vocab_list):
+    text = k
+    # print(f"{i}:{text}")
+    data = bytes(text, "utf-8")
     fout.write(struct.pack("i", len(data)))
     fout.write(data)
 
