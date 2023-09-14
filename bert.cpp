@@ -23,6 +23,7 @@ struct bert_hparams
     int32_t n_intermediate = 1536;
     int32_t n_head = 12;
     int32_t n_layer = 6;
+    int32_t n_vocab_size = 2;
     int32_t f16 = 1;
 };
 
@@ -489,11 +490,13 @@ struct bert_ctx * bert_load_from_file(const char *fname)
         const int n_intermediate = hparams.n_intermediate;
         const int n_max_tokens = hparams.n_max_tokens;
         const int n_vocab = hparams.n_vocab;
+        const int n_vocab_size = hparams.n_vocab_size;
+        
 
         model.layers.resize(n_layer);
 
         model.word_embeddings = ggml_new_tensor_2d(ctx, wtype, n_embd, n_vocab);
-        model.token_type_embeddings = ggml_new_tensor_2d(ctx, wtype, n_embd, 2);
+        model.token_type_embeddings = ggml_new_tensor_2d(ctx, wtype, n_embd, n_vocab_size);
         model.position_embeddings = ggml_new_tensor_2d(ctx, wtype, n_embd, n_max_tokens);
 
         model.ln_e_w = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
