@@ -1,9 +1,9 @@
-import sys
-import struct
 import json
-import torch
-import numpy as np
+import struct
+import sys
 
+import numpy as np
+import torch
 from transformers import AutoModel, AutoTokenizer
 
 if len(sys.argv) < 3:
@@ -40,9 +40,9 @@ if len(sys.argv) > 2:
 
 tokenizer = AutoTokenizer.from_pretrained(dir_model)
 model = AutoModel.from_pretrained(dir_model, low_cpu_mem_usage=True)
-print (model)
+print(model)
 
-print(tokenizer.encode('I believe the meaning of life is'))
+print(tokenizer.encode("I believe the meaning of life is"))
 
 list_vars = model.state_dict()
 for name in list_vars.keys():
@@ -52,7 +52,7 @@ fout = open(fname_out, "wb")
 
 print(hparams)
 
-fout.write(struct.pack("i", 0x67676d6c)) # magic: ggml in hex
+fout.write(struct.pack("i", 0x67676D6C))  # magic: ggml in hex
 fout.write(struct.pack("i", hparams["vocab_size"]))
 fout.write(struct.pack("i", hparams["max_position_embeddings"]))
 fout.write(struct.pack("i", hparams["hidden_size"]))
@@ -67,12 +67,13 @@ vocab_list = []
 vocab = tokenizer.get_vocab()
 if not isinstance(vocab, dict):
     raise TypeError
-items = list(vocab.items())
-items.sort(key=lambda x: x[1])
-vocab_list = [i[0] for i in items]
 
-for idx, k in enumerate(vocab_list):
-    text = k
+# id:key
+reversed_vocab = {idx: key for key, idx in vocab.items()}
+
+# use vocab_size to confirm size
+for idx in range(hparams["vocab_size"]):
+    text = reversed_vocab[idx]
     # print(f"{i}:{text}")
     data = bytes(text, "utf-8")
     fout.write(struct.pack("i", len(data)))
@@ -80,26 +81,26 @@ for idx, k in enumerate(vocab_list):
 
 for name in list_vars.keys():
     data = list_vars[name].squeeze().numpy()
-    if name in ['embeddings.position_ids', 'pooler.dense.weight', 'pooler.dense.bias']:
+    if name in ["embeddings.position_ids", "pooler.dense.weight", "pooler.dense.bias"]:
         continue
     print("Processing variable: " + name + " with shape: ", data.shape)
 
-    n_dims = len(data.shape);
+    n_dims = len(data.shape)
 
     # ftype == 0 -> float32, ftype == 1 -> float16
     if ftype == 1 and name[-7:] == ".weight" and n_dims == 2:
-            print("  Converting to float16")
-            data = data.astype(np.float16)
-            l_type = 1
+        print("  Converting to float16")
+        data = data.astype(np.float16)
+        l_type = 1
     else:
         l_type = 0
 
     # header
-    str = name.encode('utf-8')
+    str = name.encode("utf-8")
     fout.write(struct.pack("iii", n_dims, len(str), l_type))
     for i in range(n_dims):
         fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
-    fout.write(str);
+    fout.write(str)
 
     # data
     data.tofile(fout)
