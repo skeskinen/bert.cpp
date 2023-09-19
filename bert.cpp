@@ -365,6 +365,7 @@ struct bert_ctx * bert_load_from_file(const char *fname)
         fin.read((char *)&hparams.n_intermediate, sizeof(hparams.n_intermediate));
         fin.read((char *)&hparams.n_head, sizeof(hparams.n_head));
         fin.read((char *)&hparams.n_layer, sizeof(hparams.n_layer));
+        fin.read((char *)&hparams.n_vocab_size, sizeof(hparams.n_vocab_size));
         fin.read((char *)&hparams.f16, sizeof(hparams.f16));
 
         printf("%s: n_vocab = %d\n", __func__, hparams.n_vocab);
@@ -373,6 +374,7 @@ struct bert_ctx * bert_load_from_file(const char *fname)
         printf("%s: n_intermediate  = %d\n", __func__, hparams.n_intermediate);
         printf("%s: n_head  = %d\n", __func__, hparams.n_head);
         printf("%s: n_layer = %d\n", __func__, hparams.n_layer);
+        printf("%s: n_vocab_size = %d\n", __func__, hparams.n_vocab_size);
         printf("%s: f16     = %d\n", __func__, hparams.f16);
     }
 
