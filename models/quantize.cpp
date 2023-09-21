@@ -20,6 +20,7 @@ struct bert_hparams
     int32_t n_intermediate = 1536;
     int32_t n_head = 12;
     int32_t n_layer = 6;
+    int32_t n_vocab_size = 2;
     int32_t f16 = 1;
 };
 
@@ -74,6 +75,7 @@ bool bert_model_quantize(const std::string & fname_inp, const std::string & fnam
         finp.read((char *) &hparams.n_intermediate,   sizeof(hparams.n_intermediate));
         finp.read((char *) &hparams.n_head,  sizeof(hparams.n_head));
         finp.read((char *) &hparams.n_layer, sizeof(hparams.n_layer));
+        finp.read((char *) &hparams.n_vocab_size, sizeof(hparams.n_vocab_size));
         finp.read((char *) &hparams.f16,     sizeof(hparams.f16));
 
         printf("%s: n_vocab = %d\n", __func__, hparams.n_vocab);
@@ -82,6 +84,7 @@ bool bert_model_quantize(const std::string & fname_inp, const std::string & fnam
         printf("%s: n_intermediate  = %d\n", __func__, hparams.n_intermediate);
         printf("%s: n_head  = %d\n", __func__, hparams.n_head);
         printf("%s: n_layer = %d\n", __func__, hparams.n_layer);
+        printf("%s: n_vocab_size = %d\n", __func__, hparams.n_vocab_size);
         printf("%s: f16     = %d\n", __func__, hparams.f16);
 
         fout.write((char *) &hparams.n_vocab, sizeof(hparams.n_vocab));
@@ -90,6 +93,7 @@ bool bert_model_quantize(const std::string & fname_inp, const std::string & fnam
         fout.write((char *) &hparams.n_intermediate,   sizeof(hparams.n_intermediate));
         fout.write((char *) &hparams.n_head,  sizeof(hparams.n_head));
         fout.write((char *) &hparams.n_layer, sizeof(hparams.n_layer));
+        fout.write((char *) &hparams.n_vocab_size, sizeof(hparams.n_vocab_size));
         fout.write((char *) &itype,           sizeof(hparams.f16));
     }
 
