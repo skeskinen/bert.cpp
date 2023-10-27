@@ -3,6 +3,7 @@ import struct
 import json
 import torch
 import numpy as np
+import os
 
 from transformers import AutoModel, AutoTokenizer
 
@@ -15,6 +16,16 @@ if len(sys.argv) < 3:
 # output in the same directory as the model
 dir_model = sys.argv[1]
 fname_out = sys.argv[1] + "/ggml-model.bin"
+
+# Check if the directory exists
+if not os.path.exists(dir_model):
+    # If not, download the model from Huggingface
+    model_name = f'sentence-transformers/{dir_model}'
+    print(f"Directory {dir_model} does not exist. Downloading model {model_name}...")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModel.from_pretrained(model_name)
+    tokenizer.save_pretrained(dir_model)
+    model.save_pretrained(dir_model)
 
 with open(dir_model + "/tokenizer.json", "r", encoding="utf-8") as f:
     encoder = json.load(f)
