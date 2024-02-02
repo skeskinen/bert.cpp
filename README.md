@@ -1,3 +1,5 @@
+Updated forks: [iamlemec/bert.cpp](https://github.com/iamlemec/bert.cpp/)  [xyzhang626/embeddings.cpp](https://github.com/xyzhang626/embeddings.cpp)
+
 # bert.cpp
 
 [ggml](https://github.com/ggerganov/ggml) inference of BERT neural net architecture with pooling and normalization from [SentenceTransformers (sbert.net)](https://sbert.net/).
