@@ -1,3 +1,5 @@
+Bert.cpp has been integrated into llama.cpp! See https://github.com/ggerganov/llama.cpp/pull/5423 and the discussions
+
 Updated forks: [iamlemec/bert.cpp](https://github.com/iamlemec/bert.cpp/)  [xyzhang626/embeddings.cpp](https://github.com/xyzhang626/embeddings.cpp)
 
 # bert.cpp
