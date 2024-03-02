@@ -1,2 +1,3 @@
+link_libraries("-lrt")
 add_executable(quantize quantize.cpp)
 target_link_libraries(quantize PRIVATE bert ggml)
